@@ -1,0 +1,10 @@
+apply plugin: 'com.novoda.bintray-release'
+
+publish {
+    desc = 'This is Android Component Lib'
+    artifactId = releaseArtifact
+    publishVersion = releaseVersion
+    userOrg = 'xiaoke'
+    groupId = 'com.github.muxiaolin.component'
+    website = 'https://github.com/muxiaolin/ColinComponent'
+}
