@@ -17,6 +17,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -29,23 +30,27 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
  * Copyright (c) 2020, 芒果听见有限公司 All Rights Reserved.
  */
 public class MyMqttService extends Service {
-
-    public final String TAG = MyMqttService.class.getSimpleName();
-    private static MqttAndroidClient mqttAndroidClient;
+    private final String TAG = MyMqttService.class.getSimpleName();
+    private MqttAndroidClient mqttAndroidClient;
     private MqttConnectOptions mMqttConnectOptions;
-    public String HOST = "tcp://192.168.1.104:1883";//服务器地址（协议+地址+端口号）
-    public String USERNAME = "test001";//用户名
-    public String PASSWORD = "123456";//密码
+    private final static String serverURI = "tcp://47.106.38.39:1883";//服务器地址（协议+地址+端口号）
+    private final static String userName = "test003";//用户名
+    private final static String password = "123456";//密码
+    private final static int connectionTimeout = 15;//设置超时时间，单位：秒
+    private final static int keepAliveInterval = 20;//设置心跳包发送间隔，单位：秒
     public static String PUBLISH_TOPIC = "tourist_enter";//发布主题
     public static String RESPONSE_TOPIC = "message_arrived";//响应主题
-    //客户端ID，一般以客户端唯一标识符表示，这里用设备序列号表示
-//    @RequiresApi(api = 26)
-//    public static String CLIENTID = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? Build.getSerial() : Build.SERIAL;
-    public static String CLIENTID = "TEST000000001";
+    public static String CLIENTID = "navagation_android_testApp";
+
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        init();
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        init();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -67,7 +72,7 @@ public class MyMqttService extends Service {
      *
      * @param message 消息
      */
-    public static void publish(String message) {
+    public void publish(String message) {
         String topic = PUBLISH_TOPIC;
         Integer qos = 2;
         Boolean retained = false;
@@ -100,16 +105,15 @@ public class MyMqttService extends Service {
      * 初始化
      */
     private void init() {
-        String serverURI = HOST; //服务器地址（协议+地址+端口号）
         mqttAndroidClient = new MqttAndroidClient(this, serverURI, CLIENTID);
         mqttAndroidClient.setCallback(mqttCallback); //设置监听订阅消息的回调
         mMqttConnectOptions = new MqttConnectOptions();
         mMqttConnectOptions.setAutomaticReconnect(true);
         mMqttConnectOptions.setCleanSession(true); //设置是否清除缓存
-        mMqttConnectOptions.setConnectionTimeout(10); //设置超时时间，单位：秒
-        mMqttConnectOptions.setKeepAliveInterval(20); //设置心跳包发送间隔，单位：秒
-        mMqttConnectOptions.setUserName(USERNAME); //设置用户名
-        mMqttConnectOptions.setPassword(PASSWORD.toCharArray()); //设置密码
+        mMqttConnectOptions.setConnectionTimeout(connectionTimeout); //设置超时时间，单位：秒
+        mMqttConnectOptions.setKeepAliveInterval(keepAliveInterval); //设置心跳包发送间隔，单位：秒
+        mMqttConnectOptions.setUserName(userName); //设置用户名
+        mMqttConnectOptions.setPassword(password.toCharArray()); //设置密码
 
         // last will message
         boolean doConnect = true;
@@ -183,22 +187,20 @@ public class MyMqttService extends Service {
 
         @Override
         public void onFailure(IMqttToken arg0, Throwable arg1) {
-            arg1.printStackTrace();
-            Log.i(TAG, "连接失败 ");
+            Log.e(TAG, "连接失败 ", arg1);
             doClientConnection();//连接失败，重连（可关闭服务器进行模拟）
         }
     };
 
     //订阅主题的回调
-    private MqttCallback mqttCallback = new MqttCallback() {
+    private MqttCallback mqttCallback = new MqttCallbackExtended() {
 
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
             Log.i(TAG, "收到消息： " + new String(message.getPayload()));
             //收到消息，这里弹出Toast表示。如果需要更新UI，可以使用广播或者EventBus进行发送
-            Toast.makeText(getApplicationContext(), "messageArrived: " + new String(message.getPayload()), Toast.LENGTH_LONG).show();
+//            Toast.makeText(getApplicationContext(), "messageArrived: " + new String(message.getPayload()), Toast.LENGTH_LONG).show();
             //收到其他客户端的消息后，响应给对方告知消息已到达或者消息有问题等
-            response("message arrived");
         }
 
         @Override
@@ -208,8 +210,17 @@ public class MyMqttService extends Service {
 
         @Override
         public void connectionLost(Throwable arg0) {
-            Log.i(TAG, "连接断开 ");
-            doClientConnection();//连接断开，重连
+            Log.e(TAG, "连接断开 ", arg0);
+//            doClientConnection();//连接断开，重连
+        }
+
+        @Override
+        public void connectComplete(boolean reconnect, String serverURI) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("serverURI=" + serverURI + ", ");
+            sb.append("Iot服务器");
+            sb.append(reconnect ? "重连成功" : "连接成功");
+            Log.d(TAG, sb.toString());
         }
     };
 

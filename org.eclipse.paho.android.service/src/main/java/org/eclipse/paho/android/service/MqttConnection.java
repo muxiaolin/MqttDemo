@@ -1141,4 +1141,13 @@ class MqttConnection implements MqttCallbackExtended {
 	public void deleteBufferedMessage(int bufferIndex){
 		myClient.deleteBufferedMessage(bufferIndex);
 	}
+
+	public int getInFlightMessageCount() {
+		return myClient.getInFlightMessageCount();
+	}
+
+	public boolean removeMessage(IMqttDeliveryToken token) throws MqttException {
+		return myClient.removeMessage(token);
+	}
+
 }

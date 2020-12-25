@@ -1263,6 +1263,11 @@ public class MqttAndroidClient extends BroadcastReceiver implements
 		return token;
 	}
 
+	@Override
+	public boolean removeMessage(IMqttDeliveryToken token) throws MqttException {
+		return mqttService.removeMessage(clientHandle, token);
+	}
+
 	/**
 	 * Returns the delivery tokens for any outstanding publish operations.
 	 * <p>
@@ -1426,6 +1431,11 @@ public class MqttAndroidClient extends BroadcastReceiver implements
 	
 	public void setManualAcks(boolean manualAcks) {
 		throw new UnsupportedOperationException();	
+	}
+
+	@Override
+	public void reconnect() throws MqttException {
+		mqttService.reconnect(clientHandle);
 	}
 
 	/**
@@ -1670,7 +1680,12 @@ public class MqttAndroidClient extends BroadcastReceiver implements
 	public void deleteBufferedMessage(int bufferIndex){
 		mqttService.deleteBufferedMessage(clientHandle, bufferIndex);
 	}
-	
+
+	@Override
+	public int getInFlightMessageCount() {
+		return mqttService.getInFlightMessageCount(clientHandle);
+	}
+
 	/**
 	 * Get the SSLSocketFactory using SSL key store and password
 	 * <p>
