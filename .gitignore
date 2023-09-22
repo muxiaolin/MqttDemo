@@ -14,3 +14,4 @@
 .externalNativeBuild
 .cxx
 /publish.sh
+/publication.gradle
